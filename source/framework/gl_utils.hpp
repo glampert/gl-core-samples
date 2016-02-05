@@ -47,14 +47,14 @@
 template<class T, int N>
 constexpr int arrayLength(const T (&)[N])
 {
-	return N;
+    return N;
 }
 
 // Clamp any value within minimum/maximum range, inclusive.
 template<class T>
 constexpr T clamp(const T & x, const T & minimum, const T & maximum)
 {
-	return (x < minimum) ? minimum : (x > maximum) ? maximum : x;
+    return (x < minimum) ? minimum : (x > maximum) ? maximum : x;
 }
 
 // Degrees => Radians conversion:
@@ -602,7 +602,7 @@ public:
     // Miscellaneous application and OGL helpers:
     //
 
-	// Get the time (in milliseconds) elapsed since the application started.
+    // Get the time (in milliseconds) elapsed since the application started.
     std::int64_t getTimeMilliseconds() const noexcept;
 
     // Logs errors if glGetError reports any.
