@@ -26,8 +26,6 @@ endif # VERBOSE
 # Ad Hoc notice!
 # You have to change the filename here to compile each sample individually.
 #
-#APP_SRC_FILE = poly_triangulation.cpp
-#APP_SRC_FILE = projected_texture.cpp
 APP_SRC_FILE = doom3_models.cpp
 BIN_TARGET   = $(OUTPUT_DIR)/demo
 

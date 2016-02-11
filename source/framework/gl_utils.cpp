@@ -1147,6 +1147,10 @@ void keyCallback(GLFWwindow * window, int key, int scanCode, int action, int mod
 void keyCharCallback(GLFWwindow * window, unsigned int chr);
 }
 
+// Anchor the vtable to this file so it doesn't get
+// replicated in every other file including the header.
+GLError::~GLError() { }
+
 // ========================================================
 // class GLFWApp:
 // ========================================================
@@ -1255,8 +1259,21 @@ void GLFWApp::errorF(const char * format, ...)
     throw GLError(buffer);
 }
 
+void GLFWApp::grabSystemCursor()
+{
+    assert(glfwWindowPtr != nullptr);
+    glfwSetInputMode(glfwWindowPtr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void GLFWApp::restoreSystemCursor()
+{
+    assert(glfwWindowPtr != nullptr);
+    glfwSetInputMode(glfwWindowPtr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
 void GLFWApp::setWindowTitle(std::string title) noexcept
 {
+    assert(glfwWindowPtr != nullptr);
     windowTitle = std::move(title);
     glfwSetWindowTitle(glfwWindowPtr, windowTitle.c_str());
 }

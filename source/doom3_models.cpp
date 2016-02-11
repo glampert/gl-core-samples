@@ -31,6 +31,7 @@ const std::string animBasePath      { "assets/hellknight/anims/" };
 // User interaction keys:
 //  [N] -> Cycles the model animation.
 //  [H] -> Return the model to bind/home pose.
+//  [I] -> Back to idle animation.
 //  [P] -> Pause/resume the current animation.
 //  [T] -> Toggle display of the tangent basis vectors (normal-mapping).
 //  [S] -> Toggle display of the skeleton and joints as wireframe/points.
@@ -148,7 +149,7 @@ void Doom3ModelsApp::onInit()
     // Flashlight light cookie texture (@ TMU 3):
     flashlightCookieTexture.initFromFile(lightCookieFile + ".png", false, GLTexture::Filter::Linear, GLTexture::WrapMode::Clamp, true, 3);
 
-    // Ground plane textures:
+    // Ground plane textures (normal-mapped):
     floorBaseTexture.initFromFile(floorTileFile + ".tga",         false, GLTexture::Filter::LinearMipmaps, GLTexture::WrapMode::Clamp, true, 0);
     floorNormalTexture.initFromFile(floorTileFile + "_local.tga", false, GLTexture::Filter::LinearMipmaps, GLTexture::WrapMode::Clamp, true, 1);
     floorSpecularTexture.initFromFile(floorTileFile + "_s.tga",   false, GLTexture::Filter::LinearMipmaps, GLTexture::WrapMode::Clamp, true, 2);
@@ -414,25 +415,27 @@ void Doom3ModelsApp::onKeyChar(const unsigned int chr)
 {
     if (chr == 'n') // Cycle animations
     {
-        const auto anim = entity.findAnimation(animFiles[currAnimNum]);
-        if (anim == nullptr)
-        {
-            return;
-        }
-
-        setWindowTitle(baseWindowTitle + " => " + animFiles[currAnimNum]);
         printF("Switching to animation: %s", animFiles[currAnimNum].c_str());
+        setWindowTitle(baseWindowTitle + " => " + animFiles[currAnimNum]);
 
+        entity.setAnimation(entity.findAnimation(animFiles[currAnimNum]));
         currAnimNum = (currAnimNum + 1) % animFiles.size();
-        entity.setAnimation(anim);
     }
     else if (chr == 'h') // Back to bind/home pose
     {
-        currAnimNum = 0;
-        entity.setAnimation(nullptr);
-
         printF("Resetting to bind/home pose...");
         setWindowTitle(baseWindowTitle + " => bind pose");
+
+        entity.setAnimation(nullptr);
+        currAnimNum = 0;
+    }
+    else if (chr == 'i') // Back to idle.md5anim
+    {
+        printF("Switching to animation: %s", animFiles[0].c_str());
+        setWindowTitle(baseWindowTitle + " => " + animFiles[0]);
+
+        entity.setAnimation(entity.findAnimation(animFiles[0]));
+        currAnimNum = 0;
     }
     else if (chr == 'p') // Pause/resume the current animation
     {

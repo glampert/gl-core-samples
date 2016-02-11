@@ -553,6 +553,7 @@ class GLError final
 {
 public:
     using std::runtime_error::runtime_error;
+    ~GLError();
 };
 
 // ========================================================
@@ -624,6 +625,11 @@ public:
 
     // Prints the error and throws a GLError exception.
     void errorF(const char * format, ...) ATTR_PRINTF_FUNC(2, 3);
+
+    // Takes ownership of the system cursor/pointer, hiding it.
+    // Use restoreSystemCursor() to make it visible again.
+    void grabSystemCursor();
+    void restoreSystemCursor();
 
     //
     // Misc accessors:
