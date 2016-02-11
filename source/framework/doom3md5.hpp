@@ -4,7 +4,7 @@
 // File: doom3md5.hpp
 // Author: Guilherme R. Lampert
 // Created on: 06/02/16
-// Brief: Loader from DOOM 3 MD5 models and animations.
+// Brief: Loader for DOOM 3 MD5 models and animations.
 //
 // This source code is released under the MIT license.
 // See the accompanying LICENSE file for details.

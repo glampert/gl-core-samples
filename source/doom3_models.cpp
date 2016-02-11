@@ -4,7 +4,7 @@
 // File: doom3_models.cpp
 // Author: Guilherme R. Lampert
 // Created on: 06/02/16
-// Brief: Animated Doom 3 models sample using GPU skinning.
+// Brief: Animated DOOM 3 MD5 model display.
 //
 // This source code is released under the MIT license.
 // See the accompanying LICENSE file for details.
