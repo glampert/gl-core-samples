@@ -12,10 +12,10 @@ layout(location = 2) in vec2 v_TexCoords;
 out vec4 out_FragColor;
 
 // Uniform variables:
-uniform sampler2D u_ColorTexture;
+uniform sampler2D u_BaseTexture; // @ tmu:0
 
 void main()
 {
-    out_FragColor = texture(u_ColorTexture, v_TexCoords) * v_Color;
+    out_FragColor = texture(u_BaseTexture, v_TexCoords) * v_Color;
 }
 

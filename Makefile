@@ -27,7 +27,8 @@ endif # VERBOSE
 # You have to change the filename here to compile each sample individually.
 #
 #APP_SRC_FILE = poly_triangulation.cpp
-APP_SRC_FILE = projected_texture.cpp
+#APP_SRC_FILE = projected_texture.cpp
+APP_SRC_FILE = doom3_models.cpp
 BIN_TARGET   = $(OUTPUT_DIR)/demo
 
 MKDIR_CMD  = mkdir -p
@@ -38,6 +39,7 @@ SRC_FILES = gl3w/src/gl3w.cpp            \
             framework/gl_main.cpp        \
             framework/gl_utils.cpp       \
             framework/builtin_meshes.cpp \
+            framework/doom3md5.cpp       \
             $(APP_SRC_FILE)
 
 CXXFLAGS = $(INC_DIRS) \

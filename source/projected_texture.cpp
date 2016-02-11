@@ -284,6 +284,8 @@ void ProjTexApp::onFrameRender(const std::int64_t /* currentTimeMillis */,
 }
 
 // ========================================================
+// AppFactory:
+// ========================================================
 
 GLFWApp::Ptr AppFactory::createGLFWAppInstance()
 {

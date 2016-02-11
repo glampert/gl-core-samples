@@ -112,6 +112,8 @@ struct GLDrawVertex final
     float nx, ny, nz; // Normal vector
     float r, g, b, a; // Vertex RGBA color [0,1] range
     float u, v;       // Texture coordinates
+    float tx, ty, tz; // Tangent vector
+    float bx, by, bz; // Bi-tangent vector
 };
 
 struct GLLineVertex final
@@ -161,6 +163,11 @@ enum class GLVertexLayout
     Lines,     // GLLineVertex layout (for GLBatchLineRenderer)
     Points     // GLPointVertex layout (for GLBatchPointRenderer)
 };
+
+// Helper to compute model normals, tangents and bi-tangents for normal-mapping.
+void deriveNormalsAndTangents(const GLDrawVertex * vertsIn,   int vertCount,
+                              const GLDrawIndex  * indexesIn, int indexCount,
+                              GLDrawVertex * vertsOut);
 
 // ========================================================
 // class GLTexture: Simple OGL texture handle wrapper
@@ -597,6 +604,8 @@ public:
     virtual void onMouseMotion(int x, int y);
     virtual void onMouseScroll(double xOffset, double yOffset);
     virtual void onMouseButton(MouseButton button, bool pressed);
+    virtual void onKey(int key, int action, int mods);
+    virtual void onKeyChar(unsigned int chr);
 
     //
     // Miscellaneous application and OGL helpers:

@@ -776,6 +776,28 @@ void GLVertexArray::setGLTrianglesVertexLayout() noexcept
         /* offset    = */ reinterpret_cast<GLvoid *>(offset));
     offset += sizeof(float) * 2;
 
+    // Tangent vector:
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(
+        /* index     = */ 4,
+        /* size      = */ 3,
+        /* type      = */ GL_FLOAT,
+        /* normalize = */ GL_FALSE,
+        /* stride    = */ sizeof(GLDrawVertex),
+        /* offset    = */ reinterpret_cast<GLvoid *>(offset));
+    offset += sizeof(float) * 3;
+
+    // Bi-tangent vector:
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(
+        /* index     = */ 5,
+        /* size      = */ 3,
+        /* type      = */ GL_FLOAT,
+        /* normalize = */ GL_FALSE,
+        /* stride    = */ sizeof(GLDrawVertex),
+        /* offset    = */ reinterpret_cast<GLvoid *>(offset));
+    offset += sizeof(float) * 3;
+
     CHECK_GL_ERRORS(&app);
 }
 
@@ -1121,6 +1143,8 @@ extern "C"
 void mousePosCallback(GLFWwindow * window, double xpos, double ypos);
 void mouseScrollCallback(GLFWwindow * window, double xoffset, double yoffset);
 void mouseButtonCallback(GLFWwindow * window, int button, int action, int mods);
+void keyCallback(GLFWwindow * window, int key, int scanCode, int action, int mods);
+void keyCharCallback(GLFWwindow * window, unsigned int chr);
 }
 
 // ========================================================
@@ -1163,7 +1187,7 @@ GLFWApp::~GLFWApp()
 std::int64_t GLFWApp::getTimeMilliseconds() const noexcept
 {
     const double seconds = glfwGetTime();
-    return static_cast<std::int16_t>(seconds * 1000.0);
+    return static_cast<std::int64_t>(seconds * 1000.0);
 }
 
 void GLFWApp::checkGLErrors(const char * function, const char * filename,
@@ -1289,6 +1313,8 @@ void GLFWApp::tryCreateWindow()
     glfwSetCursorPosCallback(glfwWindowPtr,   &mousePosCallback);
     glfwSetScrollCallback(glfwWindowPtr,      &mouseScrollCallback);
     glfwSetMouseButtonCallback(glfwWindowPtr, &mouseButtonCallback);
+    glfwSetKeyCallback(glfwWindowPtr,         &keyCallback);
+    glfwSetCharCallback(glfwWindowPtr,        &keyCharCallback);
 
     // Make the drawing context (OpenGL) current for this thread:
     glfwMakeContextCurrent(glfwWindowPtr);
@@ -1370,6 +1396,16 @@ void GLFWApp::onMouseButton(MouseButton /* button */, bool /* pressed */)
     // Default impl is a no-op.
 }
 
+void GLFWApp::onKey(int /* key */, int /* action */, int /* mods */)
+{
+    // Default impl is a no-op.
+}
+
+void GLFWApp::onKeyChar(unsigned int /* chr */)
+{
+    // Default impl is a no-op.
+}
+
 // ========================================================
 // Pseudo-random number generators:
 // ========================================================
@@ -1411,4 +1447,165 @@ int randomInt(const int lowerBound, const int upperBound)
 float randomFloat(const float lowerBound, const float upperBound)
 {
     return (randomFloat() * (upperBound - lowerBound)) + lowerBound;
+}
+
+// ========================================================
+// deriveNormalsAndTangents():
+//
+// Derives the normal and orthogonal tangent vectors for the triangle vertexes.
+// For each vertex the normal and tangent vectors are derived from all triangles
+// using the vertex which results in smooth tangents across the mesh.
+//
+// This code was adapted directly from DOOM3's renderer. Original source
+// can be found at: https://github.com/id-Software/DOOM-3-BFG/blob/master/neo/renderer/tr_trisurf.cpp#L908
+// ========================================================
+
+// This should keep us within strict aliasing legality.
+union Float2Int
+{
+    float asFloat;
+    std::uint32_t asU32;
+};
+
+static float invLength(const Vec3 & v)
+{
+    return 1.0f / std::sqrt((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
+}
+
+static std::uint32_t floatSignBit(float f)
+{
+    Float2Int f2i;
+    f2i.asFloat = f;
+    return (f2i.asU32 & (1 << 31));
+}
+
+static float toggleSignBit(float f, std::uint32_t signBit)
+{
+    Float2Int f2i;
+    f2i.asFloat = f;
+    f2i.asU32 ^= signBit;
+    return f2i.asFloat;
+}
+
+void deriveNormalsAndTangents(const GLDrawVertex * vertsIn,   const int vertCount,
+                              const GLDrawIndex  * indexesIn, const int indexCount,
+                              GLDrawVertex * vertsOut)
+{
+    assert(vertsIn   != nullptr);
+    assert(indexesIn != nullptr);
+    assert(vertsOut  != nullptr);
+    assert(vertCount  > 0);
+    assert(indexCount > 0);
+
+    const Vec3 vZero{ 0.0f, 0.0f, 0.0f };
+    std::vector<Vec3> vertexNormals(vertCount, vZero);
+    std::vector<Vec3> vertexTangents(vertCount, vZero);
+    std::vector<Vec3> vertexBitangents(vertCount, vZero);
+
+    for (int i = 0; i < indexCount; i += 3)
+    {
+        const int v0 = indexesIn[i + 0];
+        const int v1 = indexesIn[i + 1];
+        const int v2 = indexesIn[i + 2];
+
+        const GLDrawVertex & a = vertsIn[v0];
+        const GLDrawVertex & b = vertsIn[v1];
+        const GLDrawVertex & c = vertsIn[v2];
+
+        const float aUV[2]{ a.u, a.v };
+        const float bUV[2]{ b.u, b.v };
+        const float cUV[2]{ c.u, c.v };
+
+        const float d0[5]{
+            b.px - a.px,
+            b.py - a.py,
+            b.pz - a.pz,
+            bUV[0] - aUV[0],
+            bUV[1] - aUV[1] };
+
+        const float d1[5]{
+            c.px - a.px,
+            c.py - a.py,
+            c.pz - a.pz,
+            cUV[0] - aUV[0],
+            cUV[1] - aUV[1] };
+
+        Vec3 normal{ (d1[1] * d0[2]) - (d1[2] * d0[1]),
+                     (d1[2] * d0[0]) - (d1[0] * d0[2]),
+                     (d1[0] * d0[1]) - (d1[1] * d0[0]) };
+
+        const float f0 = invLength(normal);
+        normal *= f0;
+
+        // NOTE: Had to flip the normal direction here! This was not
+        // in the original DOOM3 code. Is this necessary because they
+        // use a different texture and axis setup? Not sure...
+        normal *= -1.0f;
+
+        // Area sign bit:
+        const float area = (d0[3] * d1[4]) - (d0[4] * d1[3]);
+        const std::uint32_t signBit = floatSignBit(area);
+
+        Vec3 tangent{ (d0[0] * d1[4]) - (d0[4] * d1[0]),
+                      (d0[1] * d1[4]) - (d0[4] * d1[1]),
+                      (d0[2] * d1[4]) - (d0[4] * d1[2]) };
+
+        float f1 = invLength(tangent);
+        f1 = toggleSignBit(f1, signBit);
+        tangent *= f1;
+
+        Vec3 bitangent{ (d0[3] * d1[0]) - (d0[0] * d1[3]),
+                        (d0[3] * d1[1]) - (d0[1] * d1[3]),
+                        (d0[3] * d1[2]) - (d0[2] * d1[3]) };
+
+        float f2 = invLength(bitangent);
+        f2 = toggleSignBit(f2, signBit);
+        bitangent *= f2;
+
+        vertexNormals[v0] += normal;
+        vertexTangents[v0] += tangent;
+        vertexBitangents[v0] += bitangent;
+
+        vertexNormals[v1] += normal;
+        vertexTangents[v1] += tangent;
+        vertexBitangents[v1] += bitangent;
+
+        vertexNormals[v2] += normal;
+        vertexTangents[v2] += tangent;
+        vertexBitangents[v2] += bitangent;
+    }
+
+    // Project the summed vectors onto the normal plane and normalize.
+    // The tangent vectors will not necessarily be orthogonal to each
+    // other, but they will be orthogonal to the surface normal.
+    for (int i = 0; i < vertCount; ++i)
+    {
+        const float normalScale = invLength(vertexNormals[i]);
+        vertexNormals[i] *= normalScale;
+
+        vertexTangents[i]   -= dot(vertexTangents[i],   vertexNormals[i]) * vertexNormals[i];
+        vertexBitangents[i] -= dot(vertexBitangents[i], vertexNormals[i]) * vertexNormals[i];
+
+        const float tangentScale = invLength(vertexTangents[i]);
+        vertexTangents[i] *= tangentScale;
+
+        const float bitangentScale = invLength(vertexBitangents[i]);
+        vertexBitangents[i] *= bitangentScale;
+    }
+
+    // Store the new normals and tangents:
+    for (int i = 0; i < vertCount; ++i)
+    {
+        vertsOut[i].nx = vertexNormals[i][0];
+        vertsOut[i].ny = vertexNormals[i][1];
+        vertsOut[i].nz = vertexNormals[i][2];
+
+        vertsOut[i].tx = vertexTangents[i][0];
+        vertsOut[i].ty = vertexTangents[i][1];
+        vertsOut[i].tz = vertexTangents[i][2];
+
+        vertsOut[i].bx = vertexBitangents[i][0];
+        vertsOut[i].by = vertexBitangents[i][1];
+        vertsOut[i].bz = vertexBitangents[i][2];
+    }
 }

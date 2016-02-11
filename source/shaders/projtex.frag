@@ -40,7 +40,7 @@ void main()
     vec4 finalColor = vec4(0.0);
     for (int i = 0; i < numOfLights; ++i)
     {
-        // Projective fetch of spotlight:
+        // Projective fetch of spotlight texture:
         vec4 spotLightColor = textureProj(u_ProjectedTexture[i], v_ProjTexCoords[i].xyz);
 
         // Combine with light brightness/strength adjust:

@@ -53,4 +53,37 @@ inline Point3 worldPointToModel(const Mat4 & invModelToWorldMatrix, const Point3
     return toPoint3(invModelToWorldMatrix * point);
 }
 
+// Makes a plane projection matrix that can be used for simple object shadow effects.
+// The W component of the light position vector should be 1 for a point light and 0 for directional.
+inline Mat4 makeShadowMatrix(const Vec4 & plane, const Vec4 & light)
+{
+    Mat4 shadowMat;
+    const float dot = plane[0] * light[0] +
+                      plane[1] * light[1] +
+                      plane[2] * light[2] +
+                      plane[3] * light[3];
+
+    shadowMat[0][0] = dot - light[0] * plane[0];
+    shadowMat[1][0] = 0.0 - light[0] * plane[1];
+    shadowMat[2][0] = 0.0 - light[0] * plane[2];
+    shadowMat[3][0] = 0.0 - light[0] * plane[3];
+
+    shadowMat[0][1] = 0.0 - light[1] * plane[0];
+    shadowMat[1][1] = dot - light[1] * plane[1];
+    shadowMat[2][1] = 0.0 - light[1] * plane[2];
+    shadowMat[3][1] = 0.0 - light[1] * plane[3];
+
+    shadowMat[0][2] = 0.0 - light[2] * plane[0];
+    shadowMat[1][2] = 0.0 - light[2] * plane[1];
+    shadowMat[2][2] = dot - light[2] * plane[2];
+    shadowMat[3][2] = 0.0 - light[2] * plane[3];
+
+    shadowMat[0][3] = 0.0 - light[3] * plane[0];
+    shadowMat[1][3] = 0.0 - light[3] * plane[1];
+    shadowMat[2][3] = 0.0 - light[3] * plane[2];
+    shadowMat[3][3] = dot - light[3] * plane[3];
+
+    return shadowMat;
+}
+
 #endif // VECTORMATH_HPP

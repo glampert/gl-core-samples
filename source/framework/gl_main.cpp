@@ -65,6 +65,21 @@ void mouseButtonCallback(GLFWwindow * window, const int button, const int action
     } // switch (button)
 }
 
+void keyCallback(GLFWwindow * window, const int key, const int scanCode, const int action, const int mods)
+{
+    // Unused for now...
+    (void)scanCode;
+
+    assert(window == g_AppInstance->getWindowPtr());
+    g_AppInstance->onKey(key, action, mods);
+}
+
+void keyCharCallback(GLFWwindow * window, const unsigned int chr)
+{
+    assert(window == g_AppInstance->getWindowPtr());
+    g_AppInstance->onKeyChar(chr);
+}
+
 } // extern C
 
 // ========================================================

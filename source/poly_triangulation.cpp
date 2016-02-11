@@ -473,6 +473,8 @@ void PolyTrisApp::updateShapes(void)
 }
 
 // ========================================================
+// AppFactory:
+// ========================================================
 
 GLFWApp::Ptr AppFactory::createGLFWAppInstance()
 {
