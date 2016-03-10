@@ -1,14 +1,33 @@
 
-#############################
+#------------------------------------------------
+# Brief: Makefile for the GL samples.
+#
+# Remarks:
+# - Tested only on Mac OSX; Should work on Linux.
+# - GLFW must be installed on the system.
+#   (http://www.glfw.org)
+#
+# Note: Deprecated. Use premake5.lua instead.
+#------------------------------------------------
 
 # Select the proper OpenGL library for Mac (-framework OpenGL)
 # or use a default (-lGL) that should work on most Unix-like systems.
 # This script also assumes GLFW is installed and available in the system path.
-UNAME = $(shell uname)
+UNAME = $(shell uname -s)
 ifeq ($(UNAME), Darwin)
   OPENGL_LIB = -framework CoreFoundation -framework OpenGL
 else
   OPENGL_LIB = -lGL
+endif
+
+# GLFW Should be installed and visible in the system path!
+ifeq ($(UNAME), Darwin)
+  CXXFLAGS = -Weffc++
+  GLFW_LIB = -L/usr/local/lib -lglfw3
+endif
+ifeq ($(UNAME), Linux)
+  CXXFLAGS = `pkg-config --cflags glfw3`
+  GLFW_LIB = `pkg-config --static --libs glfw3`
 endif
 
 # Define VERBOSE to get the full console output.
@@ -25,6 +44,7 @@ endif # VERBOSE
 #
 # Ad Hoc notice!
 # You have to change the filename here to compile each sample individually.
+# To build all sample applications in one go, use premake instead.
 #
 APP_SRC_FILE = doom3_models.cpp
 BIN_TARGET   = $(OUTPUT_DIR)/demo
@@ -40,14 +60,14 @@ SRC_FILES = gl3w/src/gl3w.cpp            \
             framework/doom3md5.cpp       \
             $(APP_SRC_FILE)
 
-CXXFLAGS = $(INC_DIRS) \
-           -std=c++14  \
-           -Wall       \
-           -Wextra     \
-           -Weffc++    \
-           -Winit-self \
-           -Wunused    \
-           -Wshadow    \
+CXXFLAGS += $(INC_DIRS) \
+           -std=c++14   \
+           -O2          \
+           -Wall        \
+           -Wextra      \
+           -Winit-self  \
+           -Wunused     \
+           -Wshadow     \
            -pedantic
 
 INC_DIRS = -I$(SRC_DIR)              \
@@ -55,7 +75,7 @@ INC_DIRS = -I$(SRC_DIR)              \
            -I$(SRC_DIR)/gl3w/include \
            -I$(SRC_DIR)/vectormath
 
-LIB_FILES = $(OPENGL_LIB) -lGLFW3
+LIB_FILES = $(OPENGL_LIB) $(GLFW_LIB)
 OBJ_FILES = $(addprefix $(OUTPUT_DIR)/$(SRC_DIR)/, $(patsubst %.cpp, %.o, $(SRC_FILES)))
 
 #############################
