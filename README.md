@@ -1,5 +1,5 @@
 
-# OpenGL Core samples/tests
+# Core OpenGL samples and tests
 
 [![Build Status](https://travis-ci.org/glampert/gl-core-samples.svg)](https://travis-ci.org/glampert/gl-core-samples)
 
