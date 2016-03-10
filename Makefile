@@ -22,7 +22,6 @@ endif
 
 # GLFW Should be installed and visible in the system path!
 ifeq ($(UNAME), Darwin)
-  CXXFLAGS = -Weffc++
   GLFW_LIB = -L/usr/local/lib -lglfw3
 endif
 ifeq ($(UNAME), Linux)
