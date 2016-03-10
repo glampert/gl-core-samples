@@ -5,7 +5,7 @@
 
 -- Project-wide compiler flags for all builds:
 local BUILD_OPTS = {
-    "-std=c++14",
+    "-std=c++11",
     "-Wall",
     "-Wextra",
     "-Weffc++",

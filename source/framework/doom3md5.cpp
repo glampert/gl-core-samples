@@ -319,7 +319,8 @@ const MaterialInstance * ModelInstance::findMaterial(const std::string & matName
 
 const MaterialInstance * ModelInstance::createMaterial(const std::string & matName)
 {
-    auto result = materials.emplace(matName, std::make_unique<MaterialInstance>(app, matName));
+    std::unique_ptr<const MaterialInstance> newMaterial{ new MaterialInstance{ app, matName } };
+    auto result = materials.emplace(matName, std::move(newMaterial));
     if (result.second == false)
     {
         throw std::runtime_error{ "MaterialMap name collision! " + matName };
@@ -393,7 +394,7 @@ void AnimInstance::parseAnim(std::istream & inStr)
                 // NOTE: This could be optimized into a single flat allocation!
                 for (int f = 0; f < numFrames; ++f)
                 {
-                    skelFrames[f] = std::make_unique<Joint[]>(numJoints);
+                    skelFrames[f].reset(new Joint[numJoints]);
                 }
 
                 // Allocate temporary memory for building the skeleton frames:
@@ -715,7 +716,8 @@ void AnimatedEntity::loadAnimations(GLFWApp & app, const std::vector<std::string
 {
     for (const auto & animName : animFiles)
     {
-        auto result = animations.emplace(animName, std::make_unique<AnimInstance>(animName));
+        std::unique_ptr<const AnimInstance> newAnim{ new AnimInstance{ animName } };
+        auto result = animations.emplace(animName, std::move(newAnim));
         const auto anim = result.first->second.get();
 
         if (result.second == false)

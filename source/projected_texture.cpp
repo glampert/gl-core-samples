@@ -216,15 +216,15 @@ void ProjTexApp::onInit()
     //
     // Our "fake" spotlights via texture projection:
     //
-    spotlights[0] = std::make_unique<ProjectedSpotlight>(*this, shaderProg,
-                                                         Point3{ 0.0f, 3.5f,  4.0f },
-                                                         Point3{ 0.0f, 0.0f, -5.0f },
-                                                         "assets/cookie0.png", 0);
+    spotlights[0].reset(new ProjectedSpotlight{ *this, shaderProg,
+                                                Point3{ 0.0f, 3.5f,  4.0f },
+                                                Point3{ 0.0f, 0.0f, -5.0f },
+                                                "assets/cookie0.png", 0 });
 
-    spotlights[1] = std::make_unique<ProjectedSpotlight>(*this, shaderProg,
-                                                         Point3{ 0.0f, 3.5f, 1.0f },
-                                                         Point3{ 0.0f, 0.0f, 5.0f },
-                                                         "assets/cookie1.png", 1);
+    spotlights[1].reset(new ProjectedSpotlight{ *this, shaderProg,
+                                                Point3{ 0.0f, 3.5f, 1.0f },
+                                                Point3{ 0.0f, 0.0f, 5.0f },
+                                                "assets/cookie1.png", 1 });
 }
 
 void ProjTexApp::drawTeapot(const double elapsedTimeSeconds)

@@ -61,7 +61,7 @@ SRC_FILES = gl3w/src/gl3w.cpp            \
             $(APP_SRC_FILE)
 
 CXXFLAGS += $(INC_DIRS) \
-           -std=c++14   \
+           -std=c++11   \
            -O2          \
            -Wall        \
            -Wextra      \
