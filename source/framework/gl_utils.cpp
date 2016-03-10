@@ -1303,9 +1303,8 @@ void GLFWApp::tryCreateWindow()
         errorF("glfwInit() failed!");
     }
 
-    glfwWindowHint(GLFW_RESIZABLE,    false);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, true);
-    glfwWindowHint(GLFW_DEPTH_BITS,   32);
+    glfwWindowHint(GLFW_RESIZABLE,  false);
+    glfwWindowHint(GLFW_DEPTH_BITS, 32);
 
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
