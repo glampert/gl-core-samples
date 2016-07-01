@@ -1,101 +1,173 @@
 
-#------------------------------------------------
+#----------------------------------------------------------
 # Brief: Makefile for the GL samples.
 #
 # Remarks:
 # - Tested only on Mac OSX; Should work on Linux.
-# - GLFW must be installed on the system.
-#   (http://www.glfw.org)
+# - GLFW must be installed on the system. (http://www.glfw.org)
 #
-# Note: Deprecated. Use premake5.lua instead.
-#------------------------------------------------
+# Note: Deprecated. Prefer using the premake5.lua instead.
+#
+# ==== Targets ====
+#
+# debug:
+#  $ make debug
+#  Enables asserts and debug symbols (-g), no optimizations.
+#  This is the default target if none specified.
+#
+# release:
+#  $ make release
+#  Disables asserts and enables optimizations (-O3). No debug symbols.
+#
+# static_check:
+#  $ make static_check
+#  Runs Clang static analyzer on the source code.
+#  This will not generate an executable or lib,
+#  so the linking stage will fail.
+#
+#----------------------------------------------------------
+
+UNAME_CMD = $(shell uname -s)
 
 # Select the proper OpenGL library for Mac (-framework OpenGL)
 # or use a default (-lGL) that should work on most Unix-like systems.
 # This script also assumes GLFW is installed and available in the system path.
-UNAME = $(shell uname -s)
-ifeq ($(UNAME), Darwin)
+ifeq ($(UNAME_CMD), Darwin)
   OPENGL_LIB = -framework CoreFoundation -framework OpenGL
 else
   OPENGL_LIB = -lGL
 endif
 
-# GLFW Should be installed and visible in the system path!
-ifeq ($(UNAME), Darwin)
+# GLFW Should be installed and visible in the system path for this to work!
+ifeq ($(UNAME_CMD), Darwin)
   GLFW_LIB = -L/usr/local/lib -lglfw3
 endif
-ifeq ($(UNAME), Linux)
-  CXXFLAGS = `pkg-config --cflags glfw3`
-  GLFW_LIB = `pkg-config --static --libs glfw3`
+ifeq ($(UNAME_CMD), Linux)
+  CXXFLAGS += `pkg-config --cflags glfw3`
+  GLFW_LIB  = `pkg-config --static --libs glfw3`
 endif
 
-# Define VERBOSE to get the full console output.
-# Otherwise we print a shorter message for each rule.
+# Define 'VERBOSE' to get the full console output.
+# Otherwise print a short message for each rule.
 ifndef VERBOSE
-  QUIET          = @
-  ECHO_COMPILING = @echo "-> Compiling "$<" ..."
-  ECHO_LINKING   = @echo "-> Linking ..."
-  ECHO_CLEANING  = @echo "-> Cleaning ..."
+  QUIET = @
 endif # VERBOSE
 
-#############################
+#----------------------------------------------------------
 
-#
-# Ad Hoc notice!
-# You have to change the filename here to compile each sample individually.
-# To build all sample applications in one go, use premake instead.
-#
-APP_SRC_FILE = doom3_models.cpp
-BIN_TARGET   = $(OUTPUT_DIR)/demo
+MKDIR_CMD      = mkdir -p
+AR_CMD         = ar rcs
+STRIP_CMD      = strip
 
-MKDIR_CMD  = mkdir -p
-OUTPUT_DIR = build
-SRC_DIR    = source
+SRC_DIR        = source
+OUTPUT_DIR     = build
+OBJ_DIR        = $(OUTPUT_DIR)/obj
+LIB_TARGET     = $(OUTPUT_DIR)/libFramework.a
 
-SRC_FILES = gl3w/src/gl3w.cpp            \
-            framework/gl_main.cpp        \
-            framework/gl_utils.cpp       \
-            framework/builtin_meshes.cpp \
-            framework/doom3md5.cpp       \
-            $(APP_SRC_FILE)
+LIB_SRC_FILES  = $(wildcard $(SRC_DIR)/framework/*.cpp) $(wildcard $(SRC_DIR)/gl3w/src/*.cpp)
+APPS_SRC_FILES = $(wildcard $(SRC_DIR)/*.cpp)
 
-CXXFLAGS += $(INC_DIRS) \
-           -std=c++11   \
-           -O2          \
-           -Wall        \
-           -Wextra      \
-           -Winit-self  \
-           -Wunused     \
-           -Wshadow     \
+LIB_OBJ_FILES  = $(addprefix $(OBJ_DIR)/, $(patsubst %.cpp, %.o, $(LIB_SRC_FILES)))
+APPS_OBJ_FILES = $(addprefix $(OBJ_DIR)/, $(patsubst %.cpp, %.o, $(APPS_SRC_FILES)))
+
+SYS_LIB_FILES  = $(OPENGL_LIB) $(GLFW_LIB)
+
+#----------------------------------------------------------
+
+# C++ flags shared by all targets:
+COMMON_FLAGS = -std=c++11
+
+# Additional release settings:
+RELEASE_FLAGS = -O3 -DNDEBUG=1
+
+# Additional debug settings:
+DEBUG_FLAGS = -g                 \
+              -DDEBUG=1          \
+              -D_DEBUG=1         \
+              -D_LIBCPP_DEBUG=0  \
+              -D_LIBCPP_DEBUG2=0 \
+              -D_GLIBCXX_DEBUG
+
+# C++ warnings enabled:
+WARNINGS = -Wall             \
+           -Wextra           \
+           -Winit-self       \
+           -Wformat=2        \
+           -Wstrict-aliasing \
+           -Wuninitialized   \
+           -Wunused          \
+           -Wshadow          \
+           -Wswitch          \
+           -Wswitch-default  \
+           -Wpointer-arith   \
+           -Wwrite-strings   \
+           -Wmissing-braces  \
+           -Wparentheses     \
+           -Wsequence-point  \
+           -Wreturn-type     \
            -pedantic
 
+# Static analysis with Clang:
+STATIC_CHECK_FLAGS = --analyze -Xanalyzer -analyzer-output=text
+
+# Include search paths:
 INC_DIRS = -I$(SRC_DIR)              \
            -I$(SRC_DIR)/framework    \
            -I$(SRC_DIR)/gl3w/include \
            -I$(SRC_DIR)/vectormath
 
-LIB_FILES = $(OPENGL_LIB) $(GLFW_LIB)
-OBJ_FILES = $(addprefix $(OUTPUT_DIR)/$(SRC_DIR)/, $(patsubst %.cpp, %.o, $(SRC_FILES)))
+# Tie them up:
+CXXFLAGS += $(INC_DIRS) $(COMMON_FLAGS) $(WARNINGS)
 
-#############################
+#----------------------------------------------------------
 
-all: $(BIN_TARGET)
-	$(QUIET) strip $(BIN_TARGET)
+#
+# Targets/Rules:
+#
 
-$(BIN_TARGET): $(OBJ_FILES)
-	$(ECHO_LINKING)
-	$(QUIET) $(CXX) $(CXXFLAGS) -o $(BIN_TARGET) $(OBJ_FILES) $(LIB_FILES)
+# Default rule. Same as debug.
+all: debug
 
-$(OBJ_FILES): $(OUTPUT_DIR)/%.o: %.cpp
-	$(ECHO_COMPILING)
+# DEBUG:
+debug: CXXFLAGS += $(DEBUG_FLAGS)
+debug: common_rule
+	@echo "Note: Built with debug settings."
+
+# RELEASE:
+release: CXXFLAGS += $(RELEASE_FLAGS)
+release: common_rule
+	@echo "Note: Built with release settings."
+
+# Clang static check:
+static_check: CXXFLAGS += $(DEBUG_FLAGS) $(STATIC_CHECK_FLAGS)
+static_check: common_rule
+	@echo "Note: Compiled for static analysis only. No code generated."
+
+#
+# Common shared rules:
+#
+
+common_rule: $(LIB_TARGET) $(APPS_OBJ_FILES)
+
+$(LIB_TARGET): $(LIB_OBJ_FILES)
+	@echo "-> Creating static library ..."
+	$(QUIET) $(AR_CMD) $@ $^
+
+$(LIB_OBJ_FILES): $(OBJ_DIR)/%.o: %.cpp
+	@echo "-> Compiling" $< "..."
 	$(QUIET) $(MKDIR_CMD) $(dir $@)
 	$(QUIET) $(CXX) $(CXXFLAGS) -c $< -o $@
 
-clean:
-	$(ECHO_CLEANING)
-	$(QUIET) rm -f $(BIN_TARGET)
-	$(QUIET) rm -rf $(OUTPUT_DIR)/$(SRC_DIR)
+$(APPS_OBJ_FILES): $(OBJ_DIR)/%.o: %.cpp
+	@echo "-> Compiling sample application" $< "..."
+	$(QUIET) $(MKDIR_CMD) $(dir $@)
+	$(QUIET) $(CXX) $(CXXFLAGS) -c $< -o $@
+	$(QUIET) $(CXX) $(CXXFLAGS) $@ -o $(OUTPUT_DIR)/$(basename $(@F)) $(LIB_TARGET) $(SYS_LIB_FILES)
+	$(QUIET) $(STRIP_CMD) $(OUTPUT_DIR)/$(basename $(@F))
 
-run: $(BIN_TARGET)
-	./$(BIN_TARGET)
+clean:
+	@echo "-> Cleaning ..."
+	$(QUIET) rm -rf $(OBJ_DIR)
+	$(QUIET) rm -f $(LIB_TARGET)
+	$(QUIET) rm -f $(addprefix $(OUTPUT_DIR)/, $(basename $(notdir $(APPS_SRC_FILES))))
 

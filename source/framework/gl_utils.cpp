@@ -110,6 +110,8 @@ void GLTexture::initFromData(const std::uint8_t * data, const int w, const int h
     assert(w > 0 && h > 0);
     assert(chans == 4 && "Only RGBA currently supported!");
 
+    (void)chans; // Might add support in the future...
+
     if (isInitialized())
     {
         app.errorF("Texture already initialized! Call cleanup() first!");
@@ -796,7 +798,7 @@ void GLVertexArray::setGLTrianglesVertexLayout() noexcept
         /* normalize = */ GL_FALSE,
         /* stride    = */ sizeof(GLDrawVertex),
         /* offset    = */ reinterpret_cast<GLvoid *>(offset));
-    offset += sizeof(float) * 3;
+    /*offset += sizeof(float) * 3;*/
 
     CHECK_GL_ERRORS(&app);
 }
@@ -825,7 +827,7 @@ void GLVertexArray::setGLLinesVertexLayout() noexcept
         /* normalize = */ GL_FALSE,
         /* stride    = */ sizeof(GLLineVertex),
         /* offset    = */ reinterpret_cast<GLvoid *>(offset));
-    offset += sizeof(float) * 4;
+    /*offset += sizeof(float) * 4;*/
 
     CHECK_GL_ERRORS(&app);
 }
@@ -854,7 +856,7 @@ void GLVertexArray::setGLPointsVertexLayout() noexcept
         /* normalize = */ GL_FALSE,
         /* stride    = */ sizeof(GLPointVertex),
         /* offset    = */ reinterpret_cast<GLvoid *>(offset));
-    offset += sizeof(float) * 4;
+    /*offset += sizeof(float) * 4;*/
 
     CHECK_GL_ERRORS(&app);
 }

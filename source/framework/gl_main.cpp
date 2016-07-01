@@ -29,12 +29,16 @@ extern "C"
 void mousePosCallback(GLFWwindow * window, const double xpos, const double ypos)
 {
     assert(window == g_AppInstance->getWindowPtr());
+    (void)window;
+
     g_AppInstance->onMouseMotion(static_cast<int>(xpos), static_cast<int>(ypos));
 }
 
 void mouseScrollCallback(GLFWwindow * window, const double xoffset, const double yoffset)
 {
     assert(window == g_AppInstance->getWindowPtr());
+    (void)window;
+
     g_AppInstance->onMouseScroll(xoffset, yoffset);
 }
 
@@ -44,6 +48,7 @@ void mouseButtonCallback(GLFWwindow * window, const int button, const int action
 
     // Unused for now...
     (void)mods;
+    (void)window;
 
     switch (button)
     {
@@ -69,6 +74,7 @@ void keyCallback(GLFWwindow * window, const int key, const int scanCode, const i
 {
     // Unused for now...
     (void)scanCode;
+    (void)window;
 
     assert(window == g_AppInstance->getWindowPtr());
     g_AppInstance->onKey(key, action, mods);
@@ -77,6 +83,8 @@ void keyCallback(GLFWwindow * window, const int key, const int scanCode, const i
 void keyCharCallback(GLFWwindow * window, const unsigned int chr)
 {
     assert(window == g_AppInstance->getWindowPtr());
+    (void)window;
+
     g_AppInstance->onKeyChar(chr);
 }
 

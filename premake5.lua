@@ -1,4 +1,6 @@
 
+-- Note: Only tested on MacOS.
+
 ------------------------------------------------------
 -- Global projects flags / defines:
 ------------------------------------------------------
@@ -14,6 +16,7 @@ local BUILD_OPTS = {
     "-Wstrict-aliasing",
     "-Wuninitialized",
     "-Wunused",
+    "-Wshadow",
     "-Wswitch",
     "-Wswitch-default",
     "-Wpointer-arith",
@@ -22,20 +25,20 @@ local BUILD_OPTS = {
     "-Wparentheses",
     "-Wsequence-point",
     "-Wreturn-type",
-    "-Wshadow"
+    "-pedantic"
 }
 
 -- Project-wide Debug build switches:
 local DEBUG_DEFS = {
-    "DEBUG", "_DEBUG",  -- Enables assert()
-    "_GLIBCXX_DEBUG",   -- GCC std lib debugging
-    "_LIBCPP_DEBUG=0",  -- For Clang (libc++)
-    "_LIBCPP_DEBUG2=0"  -- Clang; See: http://stackoverflow.com/a/21847033/1198654
+    "DEBUG=1", "_DEBUG=1",  -- Enables assert()
+    "_GLIBCXX_DEBUG",       -- GCC std lib debugging
+    "_LIBCPP_DEBUG=0",      -- For Clang (libc++)
+    "_LIBCPP_DEBUG2=0"      -- Clang; See: http://stackoverflow.com/a/21847033/1198654
 }
 
 -- Project-wide Release build switches:
 local RELEASE_DEFS = {
-    "NDEBUG"
+    "NDEBUG=1"
 }
 
 -- System specific libraries:
@@ -49,9 +52,9 @@ local SYSTEM_LIBS = {
 
 -- Target names:
 local FRAMEWORK_LIB    = "Framework"
-local DOOM3_MODELS_APP = "d3mdl"
-local PROJ_TEX_APP     = "projtex"
-local POLY_TRI_APP     = "triangulate"
+local DOOM3_MODELS_APP = "doom3_models"
+local PROJ_TEX_APP     = "projected_texture"
+local POLY_TRI_APP     = "poly_triangulation"
 
 ------------------------------------------------------
 -- Common configurations for all projects:
