@@ -57,7 +57,6 @@ endif # VERBOSE
 
 MKDIR_CMD      = mkdir -p
 AR_CMD         = ar rcs
-STRIP_CMD      = strip
 
 SRC_DIR        = source
 OUTPUT_DIR     = build
@@ -81,11 +80,12 @@ COMMON_FLAGS = -std=c++11
 RELEASE_FLAGS = -O3 -DNDEBUG=1
 
 # Additional debug settings:
-DEBUG_FLAGS = -g                 \
-              -DDEBUG=1          \
-              -D_DEBUG=1         \
-              -D_LIBCPP_DEBUG=0  \
-              -D_LIBCPP_DEBUG2=0 \
+DEBUG_FLAGS = -g                      \
+              -fno-omit-frame-pointer \
+              -DDEBUG=1               \
+              -D_DEBUG=1              \
+              -D_LIBCPP_DEBUG=0       \
+              -D_LIBCPP_DEBUG2=0      \
               -D_GLIBCXX_DEBUG
 
 # C++ warnings enabled:
@@ -130,11 +130,13 @@ all: debug
 
 # DEBUG:
 debug: CXXFLAGS += $(DEBUG_FLAGS)
+debug: STRIP_CMD = :
 debug: common_rule
 	@echo "Note: Built with debug settings."
 
 # RELEASE:
 release: CXXFLAGS += $(RELEASE_FLAGS)
+release: STRIP_CMD = strip
 release: common_rule
 	@echo "Note: Built with release settings."
 

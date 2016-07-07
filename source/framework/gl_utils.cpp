@@ -108,7 +108,7 @@ void GLTexture::initFromData(const std::uint8_t * data, const int w, const int h
 {
     assert(data != nullptr);
     assert(w > 0 && h > 0);
-    assert(chans == 4 && "Only RGBA currently supported!");
+    assert(chans == 1 || chans == 4 && "Only GL_RED and RGBA formats currently supported!");
 
     (void)chans; // Might add support in the future...
 
@@ -131,11 +131,11 @@ void GLTexture::initFromData(const std::uint8_t * data, const int w, const int h
     glTexImage2D(
         /* target   = */ texTarget,
         /* level    = */ 0,
-        /* internal = */ GL_RGBA,
+        /* internal = */ (chans == 1 ? GL_R8 : GL_RGBA),
         /* width    = */ w,
         /* height   = */ h,
         /* border   = */ 0,
-        /* format   = */ GL_RGBA,
+        /* format   = */ (chans == 1 ? GL_RED : GL_RGBA),
         /* type     = */ GL_UNSIGNED_BYTE,
         /* data     = */ data);
 
@@ -1137,6 +1137,241 @@ void GLBatchPointRenderer::clear()
 }
 
 // ========================================================
+// class GLBatchTextRenderer:
+// ========================================================
+
+// The default embedded fort bitmap and charset.
+#include "builtin_font.hpp"
+
+GLBatchTextRenderer::GLBatchTextRenderer(GLFWApp & owner, const int initialBatchSize)
+    : glyphsTexture { owner }
+    , glyphsVA      { owner }
+    , glyphsShader  { owner }
+    , needGLUpdate  { false }
+{
+    if (initialBatchSize > 0)
+    {
+        textStrings.reserve(initialBatchSize);
+        glyphsVerts.reserve(initialBatchSize * 6 * 64); // 6 verts per glyph, ~64 glyph per string average
+    }
+
+    //
+    // Font glyphs bitmap setup:
+    //
+
+    const FontCharSet & fontCharSet = getFontCharSet();
+    std::uint8_t * fontBitmap = decompressFontBitmap();
+
+    if (fontBitmap == nullptr)
+    {
+        owner.errorF("Failed to decompress built-in font bitmap!");
+    }
+
+    glyphsTexture.initFromData(fontBitmap, fontCharSet.bitmapWidth, fontCharSet.bitmapHeight,
+                               fontCharSet.bitmapColorChannels, GLTexture::Filter::Linear,
+                               GLTexture::WrapMode::Clamp, /* mipmaps = */ false);
+    delete[] fontBitmap;
+
+    //
+    // GL setup:
+    //
+
+    glyphsShader.initFromFiles("source/shaders/text2d.vert", "source/shaders/text2d.frag");
+    glyphsShaderScreenDimensions = glyphsShader.getUniformLocation("u_ScreenDimensions");
+    glyphsShaderTextureLocation  = glyphsShader.getUniformLocation("u_GlyphTexture");
+
+    glyphsVA.initFromData(nullptr, 0, nullptr, 0, GL_DYNAMIC_DRAW, GLVertexLayout::Triangles);
+}
+
+void GLBatchTextRenderer::addText(const float x, const float y, const float scaling,
+                                  const Vec4 & color, const char * const text)
+{
+    if (text == nullptr || *text == '\0')
+    {
+        return;
+    }
+    textStrings.emplace_back(x, y, scaling, color, text);
+    needGLUpdate = true;
+}
+
+void GLBatchTextRenderer::addTextF(const float x, const float y, const float scaling,
+                                   const Vec4 & color, const char * const format, ...)
+{
+    if (format == nullptr || *format == '\0')
+    {
+        return;
+    }
+
+    va_list vaArgs;
+    char buffer[4096];
+
+    va_start(vaArgs, format);
+    const int result = std::vsnprintf(buffer, arrayLength(buffer), format, vaArgs);
+    va_end(vaArgs);
+
+    if (result > 0 && result < arrayLength(buffer))
+    {
+        textStrings.emplace_back(x, y, scaling, color, buffer);
+        needGLUpdate = true;
+    }
+}
+
+void GLBatchTextRenderer::drawText(const int scrWidth, const int scrHeight)
+{
+    if (textStrings.empty())
+    {
+        return;
+    }
+
+    glyphsTexture.bind();
+    glyphsVA.bindVA();
+
+    if (needGLUpdate)
+    {
+        for (const TextString & str : textStrings)
+        {
+            // Left-aligned
+            pushStringGlyphs(str.posX, str.posY, str.scaling, str.color, str.text.c_str());
+        }
+
+        glyphsVA.bindVB();
+        glyphsVA.updateRawData(glyphsVerts.data(), glyphsVerts.size(), sizeof(GLDrawVertex), nullptr, 0, 0);
+
+        glyphsVerts.clear(); // This buffer is just a temp we use to construct the glyph quads.
+        needGLUpdate = false;
+    }
+
+    glyphsShader.bind();
+    glyphsShader.setUniform1i(glyphsShaderTextureLocation, glyphsTexture.getTexUnit());
+    glyphsShader.setUniformVec3(glyphsShaderScreenDimensions, Vec3(scrWidth, scrHeight, 0.0f));
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_DEPTH_TEST);
+
+    // Draw the GL quads:
+    glyphsVA.draw(GL_TRIANGLES);
+    glyphsVA.bindNull();
+
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+}
+
+void GLBatchTextRenderer::clear()
+{
+    if (textStrings.empty())
+    {
+        return;
+    }
+
+    textStrings.clear();
+    glyphsVerts.clear();
+    needGLUpdate = false;
+}
+
+void GLBatchTextRenderer::pushStringGlyphs(float x, float y, const float scaling, const Vec4 & color, const char * text)
+{
+    // Invariants for all characters:
+    const float initialX    = x;
+    const float scaleU      = getFontCharSet().bitmapWidth;
+    const float scaleV      = getFontCharSet().bitmapHeight;
+    const float fixedWidth  = getFontCharSet().charWidth;
+    const float fixedHeight = getFontCharSet().charHeight;
+    const float tabW        = fixedWidth  * 4.0f * scaling; // TAB = 4 spaces.
+    const float chrW        = fixedWidth  * scaling;
+    const float chrH        = fixedHeight * scaling;
+
+    GLDrawVertex verts[4];
+    std::memset(verts, 0, sizeof(verts));
+
+    for (; *text != '\0'; ++text)
+    {
+        const int charVal = *text;
+        if (charVal >= FontCharSet::MaxChars)
+        {
+            continue;
+        }
+        if (charVal == ' ')
+        {
+            x += chrW;
+            continue;
+        }
+        if (charVal == '\t')
+        {
+            x += tabW;
+            continue;
+        }
+        if (charVal == '\n')
+        {
+            y += chrH;
+            x  = initialX;
+            continue;
+        }
+
+        const FontChar fontChar = getFontCharSet().chars[charVal];
+        const float u0 = (fontChar.x + 0.5f) / scaleU;
+        const float v0 = (fontChar.y + 0.5f) / scaleV;
+        const float u1 = u0 + (fixedWidth  / scaleU);
+        const float v1 = v0 + (fixedHeight / scaleV);
+
+        verts[0].px = x;
+        verts[0].py = y;
+        verts[0].u  = u0;
+        verts[0].v  = v0;
+        verts[0].r  = color[0];
+        verts[0].g  = color[1];
+        verts[0].b  = color[2];
+        verts[0].a  = color[3];
+        verts[1].px = x;
+        verts[1].py = y + chrH;
+        verts[1].u  = u0;
+        verts[1].v  = v1;
+        verts[1].r  = color[0];
+        verts[1].g  = color[1];
+        verts[1].b  = color[2];
+        verts[1].a  = color[3];
+        verts[2].px = x + chrW;
+        verts[2].py = y;
+        verts[2].u  = u1;
+        verts[2].v  = v0;
+        verts[2].r  = color[0];
+        verts[2].g  = color[1];
+        verts[2].b  = color[2];
+        verts[2].a  = color[3];
+        verts[3].px = x + chrW;
+        verts[3].py = y + chrH;
+        verts[3].u  = u1;
+        verts[3].v  = v1;
+        verts[3].r  = color[0];
+        verts[3].g  = color[1];
+        verts[3].b  = color[2];
+        verts[3].a  = color[3];
+
+        pushGlyphVerts(verts);
+        x += chrW;
+    }
+}
+
+void GLBatchTextRenderer::pushGlyphVerts(const GLDrawVertex verts[4])
+{
+    static const int indexes[6]{ 0, 1, 2,  2, 1, 3 };
+    for (int i = 0; i < 6; ++i)
+    {
+        glyphsVerts.push_back(verts[indexes[i]]);
+    }
+}
+
+float GLBatchTextRenderer::getCharHeight() const noexcept
+{
+    return getFontCharSet().charHeight;
+}
+
+float GLBatchTextRenderer::getcharWidth() const noexcept
+{
+    return getFontCharSet().charWidth;
+}
+
+// ========================================================
 // GLFW callbacks from gl_main.cpp:
 // ========================================================
 
@@ -1147,7 +1382,7 @@ void mouseScrollCallback(GLFWwindow * window, double xoffset, double yoffset);
 void mouseButtonCallback(GLFWwindow * window, int button, int action, int mods);
 void keyCallback(GLFWwindow * window, int key, int scanCode, int action, int mods);
 void keyCharCallback(GLFWwindow * window, unsigned int chr);
-}
+} // extern C
 
 // Anchor the vtable to this file so it doesn't get
 // replicated in every other file including the header.
@@ -1258,7 +1493,7 @@ void GLFWApp::errorF(const char * format, ...)
     va_end(vaArgs);
 
     std::cerr << "ERROR! " << buffer << "\n";
-    throw GLError(buffer);
+    throw GLError{ buffer };
 }
 
 void GLFWApp::grabSystemCursor()

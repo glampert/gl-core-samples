@@ -253,17 +253,14 @@ public:
 private:
 
     GLFWApp & app;
-
-    GLuint handle;
-    GLenum target;
-
-    int tmu;
-    int width;
-    int height;
-
-    Filter filter;
-    WrapMode wrapMode;
-    bool hasMipmaps;
+    GLuint    handle;
+    GLenum    target;
+    int       tmu;
+    int       width;
+    int       height;
+    Filter    filter;
+    WrapMode  wrapMode;
+    bool      hasMipmaps;
 };
 
 // ========================================================
@@ -417,14 +414,12 @@ public:
 private:
 
     GLFWApp & app;
-
-    GLuint vaHandle;
-    GLuint vbHandle;
-    GLuint ibHandle;
-    GLenum dataUsage;
-
-    int vertexCount;
-    int indexCount;
+    GLuint    vaHandle;
+    GLuint    vbHandle;
+    GLuint    ibHandle;
+    GLenum    dataUsage;
+    int       vertexCount;
+    int       indexCount;
 };
 
 // ========================================================
@@ -545,6 +540,65 @@ private:
 };
 
 // ========================================================
+// class GLBatchTextRenderer: Simple 2D screen text draw
+// ========================================================
+
+class GLBatchTextRenderer final
+{
+public:
+
+    // Copy/assignment is disabled.
+    GLBatchTextRenderer(const GLBatchTextRenderer &) = delete;
+    GLBatchTextRenderer & operator = (const GLBatchTextRenderer &) = delete;
+
+    // Initial batch size is not a fixed constraint. It will grow as needed.
+    GLBatchTextRenderer(GLFWApp & owner, int initialBatchSize);
+
+    // Add a string to the text batch for later drawing.
+    void addText(float x, float y, float scaling, const Vec4 & color, const char * text);
+    void addTextF(float x, float y, float scaling, const Vec4 & color, const char * format, ...) ATTR_PRINTF_FUNC(6, 7);
+
+    // Draw or clear the batched strings.
+    void drawText(int scrWidth, int scrHeight);
+    void clear();
+
+    // Unscaled dimensions in pixels.
+    float getCharHeight() const noexcept;
+    float getcharWidth()  const noexcept;
+
+private:
+
+    struct TextString final
+    {
+        float       posX;
+        float       posY;
+        float       scaling;
+        Vec4        color;
+        std::string text;
+
+        TextString(float x, float y, float s, const Vec4 & c, const char * str)
+            : posX    { x }
+            , posY    { y }
+            , scaling { s }
+            , color   { c }
+            , text    { str }
+        { }
+    };
+
+    void pushStringGlyphs(float x, float y, float scaling, const Vec4 & color, const char * text);
+    void pushGlyphVerts(const GLDrawVertex verts[4]);
+
+    std::vector<TextString>   textStrings;
+    std::vector<GLDrawVertex> glyphsVerts;
+    GLTexture                 glyphsTexture;
+    GLVertexArray             glyphsVA;
+    GLShaderProg              glyphsShader;
+    GLint                     glyphsShaderScreenDimensions;
+    GLint                     glyphsShaderTextureLocation;
+    bool                      needGLUpdate;
+};
+
+// ========================================================
 // class GLError: Exception type thrown by GLFWApp
 // ========================================================
 
@@ -655,11 +709,11 @@ public:
 private:
 
     // Common window and app data:
-    int windowWidth;
-    int windowHeight;
-    float clearScrColor[4];
+    int          windowWidth;
+    int          windowHeight;
+    float        clearScrColor[4];
     GLFWwindow * glfwWindowPtr;
-    std::string windowTitle;
+    std::string  windowTitle;
 };
 
 // ========================================================
