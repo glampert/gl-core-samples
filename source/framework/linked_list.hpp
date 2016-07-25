@@ -5,6 +5,10 @@
 // Author: Guilherme R. Lampert
 // Created on: 06/07/16
 // Brief: Simple intrusive doubly-linked list template.
+//
+// This source code is released under the MIT license.
+// See the accompanying LICENSE file for details.
+//
 // ================================================================================================
 
 #ifndef LINKED_LIST_HPP
@@ -23,7 +27,7 @@
 // {
 //     T * next;
 //     T * prev;
-//     bool linked() const { return prev != nullptr && next != nullptr; }
+//     bool isLinked() const { return prev != nullptr && next != nullptr; }
 // };
 //
 // Some of the member methods in this class are named as the
@@ -46,15 +50,16 @@ public:
     void push_front(T * node)
     {
         assert(node != nullptr);
-        assert(!node->linked()); // A node can only be a member of one list at a time!
+        assert(!node->isLinked()); // A node can only be a member of one list at a time!
 
         if (!empty())
         {
-            // head->prev points the tail, and vice-versa:
+            // head->prev points the tail, tail->next points back to the head.
             T * tail = head->prev;
             node->next = head;
             head->prev = node;
             node->prev = tail;
+            tail->next = node;
             head = node;
         }
         else // Empty list, first insertion:
@@ -68,11 +73,11 @@ public:
     void push_back(T * node)
     {
         assert(node != nullptr);
-        assert(!node->linked()); // A node can only be a member of one list at a time!
+        assert(!node->isLinked()); // A node can only be a member of one list at a time!
 
         if (!empty())
         {
-            // head->prev points the tail, and vice-versa:
+            // head->prev points the tail, tail->next points back to the head.
             T * tail = head->prev;
             node->prev = tail;
             tail->next = node;
@@ -102,8 +107,10 @@ public:
 
         T * removedNode = head;
         T * tail = head->prev;
+
         head = head->next;
         head->prev = tail;
+        tail->next = head;
         --count;
 
         removedNode->prev = nullptr;
@@ -117,8 +124,9 @@ public:
             return nullptr;
         }
 
-        T * removedNode = head->prev;
         T * tail = head->prev;
+        T * removedNode = tail;
+
         head->prev = tail->prev;
         tail->prev->next = head;
         --count;
@@ -136,7 +144,7 @@ public:
     {
         // Assumes the node is linked to THIS LIST.
         assert(node != nullptr);
-        assert(node->linked());
+        assert(node->isLinked());
         assert(!empty());
 
         if (node == head) // Head

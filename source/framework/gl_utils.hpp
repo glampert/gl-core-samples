@@ -88,6 +88,20 @@ constexpr float aspectRatio(const float w, const float h)
     return w / h;
 }
 
+// Floating-point comparison with an error tolerance (epsilon):
+constexpr bool floatGreaterThanZero(const float val, const float tolerance)
+{
+    return val >= tolerance;
+}
+constexpr bool floatLessThanZero(const float val, const float tolerance)
+{
+    return val <= -tolerance;
+}
+
+// Table with a few built-in colors:
+extern const Vec4 globalColorTable[];
+extern const int globalColorTableSize;
+
 // Forward declared. Defined further down.
 class GLFWApp;
 
@@ -221,7 +235,8 @@ public:
 
     // Built-in checkerboard texture. Default colors are pink/black if 'colors' is null.
     void initWithCheckerPattern(int numSquares, const float (*colors)[4] = nullptr,
-                                Filter texFilter = Filter::Nearest, int texUnit = 0);
+                                Filter texFilter = Filter::Nearest, int texUnit = 0,
+                                WrapMode texWrap = WrapMode::Clamp);
 
     // This frees the underlaying texture handle, but leaves this object intact.
     void cleanup() noexcept;
@@ -457,8 +472,12 @@ public:
     void addLine(const Point3 & from, const Point3 & to, const Vec4 & color);
 
     // Add a two-tone lines segment to the draw batch.
-    void addLine(const Point3 & from, const Point3 & to,
+    void addLine(const Point3 & from,    const Point3 & to,
                  const Vec4 & fromColor, const Vec4 & toColor);
+
+    // Box and axis-aligned bounding box.
+    void addBox(const Point3 points[8], const Vec4 & color);
+    void addBoundingBox(const Point3 & mins, const Point3 & maxs, const Vec4 & color);
 
     // Actually performs the drawing.
     // Will make the lines shader program current.
@@ -555,6 +574,7 @@ public:
     GLBatchTextRenderer(GLFWApp & owner, int initialBatchSize);
 
     // Add a string to the text batch for later drawing.
+    // Text origin (0,0) is the upper-left corner of the screen.
     void addText(float x, float y, float scaling, const Vec4 & color, const char * text);
     void addTextF(float x, float y, float scaling, const Vec4 & color, const char * format, ...) ATTR_PRINTF_FUNC(6, 7);
 
@@ -564,7 +584,7 @@ public:
 
     // Unscaled dimensions in pixels.
     float getCharHeight() const noexcept;
-    float getcharWidth()  const noexcept;
+    float getCharWidth()  const noexcept;
 
 private:
 

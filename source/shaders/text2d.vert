@@ -9,8 +9,8 @@ layout(location = 2) in vec4 in_Color;
 layout(location = 3) in vec2 in_TexCoords;
 
 // Varyings:
-layout(location = 1) out vec4 v_Color;
-layout(location = 2) out vec2 v_TexCoords;
+layout(location = 0) out vec4 v_Color;
+layout(location = 1) out vec2 v_TexCoords;
 
 // Uniform variables:
 uniform vec3 u_ScreenDimensions;

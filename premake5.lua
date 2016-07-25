@@ -55,6 +55,7 @@ local FRAMEWORK_LIB    = "Framework"
 local DOOM3_MODELS_APP = "doom3_models"
 local PROJ_TEX_APP     = "projected_texture"
 local POLY_TRI_APP     = "poly_triangulation"
+local WORLD_BSP_APP    = "world_bsp"
 
 ------------------------------------------------------
 -- Common configurations for all projects:
@@ -104,5 +105,13 @@ project (PROJ_TEX_APP)
 project (POLY_TRI_APP)
     kind  "ConsoleApp"
     files { "source/poly_triangulation.cpp" }
+    links { SYSTEM_LIBS, FRAMEWORK_LIB }
+
+------------------------------------------------------
+-- BSP scene rendering demo:
+------------------------------------------------------
+project (WORLD_BSP_APP)
+    kind  "ConsoleApp"
+    files { "source/world_bsp.cpp" }
     links { SYSTEM_LIBS, FRAMEWORK_LIB }
 

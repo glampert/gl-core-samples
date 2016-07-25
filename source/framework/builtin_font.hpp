@@ -5,13 +5,14 @@
 // Author: Guilherme R. Lampert
 // Created on: 07/07/16
 // Brief: Embedded font bitmap and charset used by the GLBatchTextRenderer.
+//
+// This source code is released under the MIT license.
+// See the accompanying LICENSE file for details.
+//
 // ================================================================================================
 
 #ifndef BUILTIN_FONT_HPP
 #define BUILTIN_FONT_HPP
-
-#include <cstdint>
-#include <cstdlib>
 
 struct FontChar
 {

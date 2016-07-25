@@ -212,7 +212,8 @@ void GLTexture::initFromData(const std::uint8_t * data, const int w, const int h
 void GLTexture::initWithCheckerPattern(const int numSquares,
                                        const float (*colors)[4],
                                        const Filter texFilter,
-                                       const int texUnit)
+                                       const int texUnit,
+                                       const WrapMode texWrap)
 {
     assert((numSquares % 2) == 0);
 
@@ -260,7 +261,7 @@ void GLTexture::initWithCheckerPattern(const int numSquares,
 
     initFromData(reinterpret_cast<std::uint8_t *>(buffer),
                  checkerDim, checkerDim, 4, texFilter,
-                 WrapMode::Clamp, true, texUnit, GL_TEXTURE_2D);
+                 texWrap, true, texUnit, GL_TEXTURE_2D);
 }
 
 void GLTexture::cleanup() noexcept
@@ -1030,12 +1031,41 @@ void GLBatchLineRenderer::addLine(const Point3 & from, const Point3 & to,
     needGLUpdate = true;
 }
 
-void GLBatchLineRenderer::addLine(const Point3 & from, const Point3 & to,
+void GLBatchLineRenderer::addLine(const Point3 & from,    const Point3 & to,
                                   const Vec4 & fromColor, const Vec4 & toColor)
 {
     lineVerts.emplace_back(from, fromColor);
     lineVerts.emplace_back(to, toColor);
     needGLUpdate = true;
+}
+
+void GLBatchLineRenderer::addBox(const Point3 points[8], const Vec4 & color)
+{
+    // Build the lines from points using clever indexing tricks:
+    // (& 3 is a fancy way of doing % 4, but avoids the expensive modulo operation)
+    for (int i = 0; i < 4; ++i)
+    {
+        addLine(points[i], points[(i + 1) & 3], color);
+        addLine(points[4 + i], points[4 + ((i + 1) & 3)], color);
+        addLine(points[i], points[4 + i], color);
+    }
+}
+
+void GLBatchLineRenderer::addBoundingBox(const Point3 & mins, const Point3 & maxs, const Vec4 & color)
+{
+    Point3 points[8];
+    const Point3 bb[2] = { mins, maxs };
+
+    // Expand min/max bounds:
+    for (int i = 0; i < arrayLength(points); ++i)
+    {
+        points[i][0] = bb[(i ^ (i >> 1)) & 1][0];
+        points[i][1] = bb[(i >> 1) & 1][1];
+        points[i][2] = bb[(i >> 2) & 1][2];
+    }
+
+    // Build the lines:
+    addBox(points, color);
 }
 
 void GLBatchLineRenderer::drawLines()
@@ -1366,7 +1396,7 @@ float GLBatchTextRenderer::getCharHeight() const noexcept
     return getFontCharSet().charHeight;
 }
 
-float GLBatchTextRenderer::getcharWidth() const noexcept
+float GLBatchTextRenderer::getCharWidth() const noexcept
 {
     return getFontCharSet().charWidth;
 }
@@ -1658,6 +1688,40 @@ void GLFWApp::onKeyChar(unsigned int /* chr */)
 {
     // Default impl is a no-op.
 }
+
+// ========================================================
+// Some built-in colors:
+// ========================================================
+
+const Vec4 globalColorTable[]{
+    { 0.0f,  0.0f,  1.0f,  1.0f }, // blue
+    { 0.65f, 0.16f, 0.16f, 1.0f }, // brown
+    { 0.0f,  1.0f,  1.0f,  1.0f }, // cyan
+    { 0.50f, 0.12f, 0.0f,  1.0f }, // copper
+    { 0.0f,  0.0f,  0.55f, 1.0f }, // dark blue
+    { 0.0f,  1.0f,  0.0f,  1.0f }, // green
+    { 0.50f, 0.50f, 0.50f, 1.0f }, // gray
+    { 0.70f, 0.70f, 0.70f, 1.0f }, // light gray
+    { 1.0f,  0.84f, 0.0f,  1.0f }, // gold
+    { 0.76f, 0.87f, 0.87f, 1.0f }, // ice
+    { 0.53f, 0.81f, 0.98f, 1.0f }, // light sky blue
+    { 0.68f, 0.85f, 0.90f, 1.0f }, // light blue
+    { 0.82f, 0.41f, 0.12f, 1.0f }, // lime
+    { 1.0f,  0.0f,  1.0f,  1.0f }, // magenta
+    { 0.50f, 0.0f,  0.0f,  1.0f }, // maroon
+    { 1.0f,  0.65f, 0.0f,  1.0f }, // orange
+    { 0.50f, 0.50f, 0.0f,  1.0f }, // olive
+    { 1.0f,  0.75f, 0.80f, 1.0f }, // pink
+    { 0.50f, 0.0f,  0.50f, 1.0f }, // purple
+    { 1.0f,  0.0f,  0.0f,  1.0f }, // red
+    { 0.75f, 0.75f, 0.75f, 1.0f }, // silver
+    { 0.00f, 0.50f, 0.50f, 1.0f }, // teal
+    { 0.93f, 0.51f, 0.93f, 1.0f }, // violet
+    { 1.0f,  1.0f,  0.0f,  1.0f }, // yellow
+    { 1.0f,  1.0f,  1.0f,  1.0f }, // white
+    { 0.0f,  0.0f,  0.0f,  1.0f }  // black
+};
+const int globalColorTableSize = arrayLength(globalColorTable);
 
 // ========================================================
 // Pseudo-random number generators:

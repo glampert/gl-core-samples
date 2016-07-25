@@ -5,10 +5,16 @@
 // Author: Guilherme R. Lampert
 // Created on: 05/07/16
 // Brief: Simple First Person 3D camera for the demos.
+//
+// This source code is released under the MIT license.
+// See the accompanying LICENSE file for details.
+//
 // ================================================================================================
 
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
+
+#include "vectormath.hpp"
 
 // ========================================================
 // class Camera:

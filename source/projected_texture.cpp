@@ -23,7 +23,7 @@ constexpr float defaultClearColor[]{ 0.7f, 0.7f, 0.7f, 1.0f };
 // struct ProjectedSpotlight:
 // ========================================================
 
-struct ProjectedSpotlight
+struct ProjectedSpotlight final
 {
     GLTexture lightCookieTexture;
     GLShaderProg & shaderProg;
