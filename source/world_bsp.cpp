@@ -18,6 +18,9 @@
 #include "framework/camera.hpp"
 #include "framework/world_rendering.hpp"
 
+#include <cstdarg>
+#include <cstdio>
+
 // App constants:
 constexpr int initialWinWidth  = 1024;
 constexpr int initialWinHeight = 768;

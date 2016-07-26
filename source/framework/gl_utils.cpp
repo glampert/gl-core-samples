@@ -108,7 +108,7 @@ void GLTexture::initFromData(const std::uint8_t * data, const int w, const int h
 {
     assert(data != nullptr);
     assert(w > 0 && h > 0);
-    assert(chans == 1 || chans == 4 && "Only GL_RED and RGBA formats currently supported!");
+    assert((chans == 1 || chans == 4) && "Only GL_RED and RGBA formats currently supported!");
 
     (void)chans; // Might add support in the future...
 
