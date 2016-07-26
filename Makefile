@@ -105,7 +105,8 @@ WARNINGS = -Wall             \
            -Wparentheses     \
            -Wsequence-point  \
            -Wreturn-type     \
-           -pedantic
+           -pedantic         \
+		   -Wno-unused-function
 
 # Static analysis with Clang:
 STATIC_CHECK_FLAGS = --analyze -Xanalyzer -analyzer-output=text

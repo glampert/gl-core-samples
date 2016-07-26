@@ -12,7 +12,9 @@
 // ================================================================================================
 
 #include "world_rendering.hpp"
+
 #include <cstdio>
+#include <algorithm>
 
 //
 // Some of the code in this file was based on samples provided by Alan Baylis in his website:
@@ -1332,6 +1334,10 @@ void buildBspTreeRecursive(RenderData * world, BspNode * node)
             // Break the triangle into up to 3 new triangles:
             splitTriangle(world, *poly, node->partition, &node->frontNode->polygons, &node->backNode->polygons);
             ++g_nPolysSpanning;
+            break;
+
+        default :
+            assert(false);
             break;
         } // switch (side)
     }
